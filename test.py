@@ -23,6 +23,8 @@ from selenium.webdriver.chrome.options import Options
 
 
 import time
+import requests
+from tqdm import tqdm
 
 
 class SiteReader:
@@ -34,13 +36,15 @@ class SiteReader:
         # # chrome_options.add_argument("--headless")
         chrome_options.add_argument("--window-size=800,600")
         chrome_options.add_argument("--remote-debugging-port=9222")
-        print(chrome_options.headless)
+        print(f"Chrome headless is set to: {chrome_options.headless}")
         # self.driver = webdriver.Chrome(options=chrome_options)
 
         # Prototyping
         self.driver = webdriver.Chrome()
 
         # if webdriver gets stuck in headless mode, webdriver.ChromeOptions.set_headless=False
+        base_url = "https://www.trulia.com"
+        page_url = "/for_rent/Austin,TX/"
 
     def get_url_list(self):
         """Gets a list of urls from main page to scrape."""
@@ -50,9 +54,9 @@ class SiteReader:
 
         url_list = []
         last_page = False
+        i = 1
         base_url = "https://www.trulia.com"
         page_url = "/for_rent/Austin,TX/"
-        i = 1
         while last_page == False and i < 100:
             # for i in range(98):
             time.sleep(3)
@@ -87,14 +91,171 @@ class SiteReader:
             i += 1
         return url_list
 
+    def get_apartment_data(self, base_url, current_url):
+        """Gets apartment data for the url specified"""
+        try:
+
+            time.sleep(2)
+            # print(base_url + current_url)
+            response = self.driver.get(base_url + current_url)
+            html = self.driver.execute_script("return document.body.innerHTML;")
+            soup = BeautifulSoup(html, "lxml")
+
+        except (ConnectionError, ConnectionResetError):
+            pass
+
+        apartment_list = []
+        df = self.create_df()
+        # print(f"made the dataframe: {df}")
+
+        for floor_plan_table in soup.find_all(
+            "table", {"data-testid": "floor-plan-group"}
+        ):
+            for tr in floor_plan_table.find_all("tr"):
+
+                unit = tr.find("div", {"color": "highlight"}).text
+                # print(unit)
+
+                sqft = tr.find(
+                    "td",
+                    {"class": "FloorPlanTable__FloorPlanFloorSpaceCell-sc-1ghu3y7-5"},
+                ).text
+
+                bed = tr.find_all(
+                    "td",
+                    {"class": "FloorPlanTable__FloorPlanFeaturesCell-sc-1ghu3y7-4"},
+                )[0].text
+
+                bath = tr.find_all(
+                    "td",
+                    {"class": "FloorPlanTable__FloorPlanFeaturesCell-sc-1ghu3y7-4"},
+                )[1].text
+
+                price = tr.find_all(
+                    "td",
+                    {
+                        "class": "FloorPlanTable__FloorPlanCell-sc-1ghu3y7-2",
+                        "class": "FloorPlanTable__FloorPlanSMCell-sc-1ghu3y7-8",
+                    },
+                    limit=2,
+                )[1].text
+
+                name = soup.find(
+                    "span", {"data-testid": "home-details-summary-headline"}
+                ).text
+
+                address = soup.find_all(
+                    "span", {"data-testid": "home-details-summary-city-state"}
+                )[0].text
+
+                city_state_zip = soup.find_all(
+                    "span", {"data-testid": "home-details-summary-city-state"}
+                )[1].text
+
+                city, state, zipcode = city_state_zip.replace(",", "").rsplit(
+                    maxsplit=2
+                )
+
+                description = soup.find(
+                    "div", {"data-testid": "home-description-text-description-text"}
+                ).text
+
+                details = [
+                    detail.text
+                    for detail in soup.find_all(
+                        "li", {"class": "FeatureList__FeatureListItem-iipbki-0 dArMue"}
+                    )
+                ]
+                details = " ,".join(details)
+
+                apartment_url = base_url + current_url
+                date = str(dt.now().date())
+
+                df = df.append(
+                    {
+                        "name": name,
+                        "address": address,
+                        "unit": unit,
+                        "sqft": sqft,
+                        "bed": bed,
+                        "bath": bath,
+                        "price": price,
+                        "city": city,
+                        "state": state,
+                        "zipcode": zipcode,
+                        "description": description,
+                        "details": details,
+                        "url": apartment_url,
+                        "date": date,
+                    },
+                    ignore_index=True,
+                )
+        return df
+
+    def get_all_apartments(self, base_url, url_list):
+        """
+        Wrapper function using "get_apartment_data" function to get data for all apartments in "url_list"
+        """
+
+        apts_data = self.create_df()
+        for i, current_url in enumerate(tqdm(url_list.iloc[:, 1].to_list()), start=1):
+            # print(current_url)
+            time.sleep(3)
+            apts_data = apts_data.append(
+                self.get_apartment_data(base_url, current_url), ignore_index=True
+            )
+            print(apts_data.tail(1))
+        return apts_data
+
+    def create_df(self):
+        df = pd.DataFrame(
+            columns=[
+                "name",
+                "address",
+                "unit",
+                "sqft",
+                "bed",
+                "bath",
+                "price",
+                "city",
+                "state",
+                "zipcode",
+                "description",
+                "details",
+                "url",
+                "date",
+            ]
+        )
+        return df
+
+    def df_converter(self, df):
+        """Converts rows to numeric and float for calculations"""
+        df = df.astype(
+            {"sqft": "int32", "price": "int32", "bath": "float32", "bed": "float32"}
+        )
+
+        return df
+
 
 def main():
     """ MAIN """
-    bot = SiteReader()
-    ulist = bot.get_url_list()
-    to_save = pd.DataFrame(ulist)
-    to_save.to_csv("current_listings.csv")
 
 
 if __name__ == "__main__":
     main()
+
+    print(f"Starting...")
+    bot = SiteReader()
+    # ulist = bot.get_url_list()
+    # to_save = pd.DataFrame(ulist)
+    # to_save.to_csv("current_listings.csv")
+    url_list = pd.read_csv("listings.csv")
+
+    test_url = url_list.iloc[2][1]
+    base_url = "https://www.trulia.com"
+    page_url = "/for_rent/Austin,TX/"
+
+    apts_data = bot.get_all_apartments(base_url, url_list)
+    print(f"Apartments retrieved: {len(apts_data)}")
+    to_save = pd.DataFrame(apts_data)
+    to_save.to_csv("current_apt_data.csv")

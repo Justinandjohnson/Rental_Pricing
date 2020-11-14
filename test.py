@@ -95,11 +95,12 @@ class SiteReader:
         """Gets apartment data for the url specified"""
         try:
 
-            time.sleep(2)
+            time.sleep(0.1)
             # print(base_url + current_url)
             response = self.driver.get(base_url + current_url)
             html = self.driver.execute_script("return document.body.innerHTML;")
             soup = BeautifulSoup(html, "lxml")
+            # print(soup.text)
 
         except (ConnectionError, ConnectionResetError):
             pass
@@ -171,23 +172,30 @@ class SiteReader:
                 apartment_url = base_url + current_url
                 date = str(dt.now().date())
 
-                df = df.append(
-                    {
-                        "name": name,
-                        "address": address,
-                        "unit": unit,
-                        "sqft": sqft,
-                        "bed": bed,
-                        "bath": bath,
-                        "price": price,
-                        "city": city,
-                        "state": state,
-                        "zipcode": zipcode,
-                        "description": description,
-                        "details": details,
-                        "url": apartment_url,
-                        "date": date,
-                    },
+                df = pd.concat(
+                    [
+                        df,
+                        pd.DataFrame(
+                            [
+                                {
+                                    "name": name,
+                                    "address": address,
+                                    "unit": unit,
+                                    "sqft": sqft,
+                                    "bed": bed,
+                                    "bath": bath,
+                                    "price": price,
+                                    "city": city,
+                                    "state": state,
+                                    "zipcode": zipcode,
+                                    "description": description,
+                                    "details": details,
+                                    "url": apartment_url,
+                                    "date": date,
+                                }
+                            ]
+                        ),
+                    ],
                     ignore_index=True,
                 )
         return df
@@ -198,11 +206,16 @@ class SiteReader:
         """
 
         apts_data = self.create_df()
-        for i, current_url in enumerate(tqdm(url_list.iloc[:, 1].to_list()), start=1):
+        for i, current_url in enumerate(
+            tqdm(url_list.iloc[:, 1].to_list(), unit="sites"), start=1
+        ):
+            if i % 10 == 0:
+                apts_data.to_csv("DATA/scrape_files/partial.csv")
             # print(current_url)
             time.sleep(3)
-            apts_data = apts_data.append(
-                self.get_apartment_data(base_url, current_url), ignore_index=True
+            apts_data = pd.concat(
+                [apts_data, self.get_apartment_data(base_url, current_url)],
+                ignore_index=True,
             )
             print(apts_data.tail(1))
         return apts_data
@@ -255,7 +268,9 @@ if __name__ == "__main__":
     base_url = "https://www.trulia.com"
     page_url = "/for_rent/Austin,TX/"
 
-    apts_data = bot.get_all_apartments(base_url, url_list)
-    print(f"Apartments retrieved: {len(apts_data)}")
-    to_save = pd.DataFrame(apts_data)
-    to_save.to_csv("current_apt_data.csv")
+    # TODO: figure out how to handle housing rentals #1392
+
+    # apts_data = bot.get_all_apartments(base_url, url_list)
+    # print(f"Apartments retrieved: {len(apts_data)}")
+    # to_save = pd.DataFrame(apts_data)
+    # to_save.to_csv("current_apt_data.csv")

@@ -25,6 +25,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 import requests
 from tqdm import tqdm
+import os
 
 
 class SiteReader:
@@ -57,7 +58,7 @@ class SiteReader:
         i = 1
         base_url = "https://www.trulia.com"
         page_url = "/for_rent/Austin,TX/"
-        while last_page == False and i < 100:
+        while last_page == False and i < 100:  # 100 picked because 92 pages for austin
             # for i in range(98):
             time.sleep(3)
             self.driver.get(base_url + page_url)
@@ -119,24 +120,35 @@ class SiteReader:
 
                 sqft = tr.find(
                     "td",
-                    {"class": "FloorPlanTable__FloorPlanFloorSpaceCell-sc-1ghu3y7-5"},
+                    {
+                        "class": lambda L: L
+                        and L.startswith("FloorPlanTable__FloorPlanFloorSpaceCell")
+                    },
                 ).text
 
                 bed = tr.find_all(
                     "td",
-                    {"class": "FloorPlanTable__FloorPlanFeaturesCell-sc-1ghu3y7-4"},
+                    {
+                        "class": lambda L: L
+                        and L.startswith("FloorPlanTable__FloorPlanFeaturesCell")
+                    },
                 )[0].text
 
                 bath = tr.find_all(
                     "td",
-                    {"class": "FloorPlanTable__FloorPlanFeaturesCell-sc-1ghu3y7-4"},
+                    {
+                        "class": lambda L: L
+                        and L.startswith("FloorPlanTable__FloorPlanFeaturesCell")
+                    },
                 )[1].text
 
                 price = tr.find_all(
                     "td",
                     {
-                        "class": "FloorPlanTable__FloorPlanCell-sc-1ghu3y7-2",
-                        "class": "FloorPlanTable__FloorPlanSMCell-sc-1ghu3y7-8",
+                        "class": lambda L: L
+                        and L.startswith("FloorPlanTable__FloorPlanCell"),
+                        "class": lambda L: L
+                        and L.startswith("FloorPlanTable__FloorPlanSMCell"),
                     },
                     limit=2,
                 )[1].text
@@ -164,7 +176,11 @@ class SiteReader:
                 details = [
                     detail.text
                     for detail in soup.find_all(
-                        "li", {"class": "FeatureList__FeatureListItem-iipbki-0 dArMue"}
+                        "li",
+                        {
+                            "class": lambda L: L
+                            and L.startswith("FeatureList__FeatureListItem")
+                        },
                     )
                 ]
                 details = " ,".join(details)
@@ -207,7 +223,7 @@ class SiteReader:
 
         apts_data = self.create_df()
         for i, current_url in enumerate(
-            tqdm(url_list.iloc[:, 1].to_list(), unit="sites"), start=1
+            tqdm(url_list.iloc[:, 1].to_list(), unit="site"), start=1
         ):
             if i % 10 == 0:
                 apts_data.to_csv("DATA/scrape_files/partial.csv")
@@ -258,11 +274,16 @@ if __name__ == "__main__":
     main()
 
     print(f"Starting...")
+    os.system(
+        "export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0"
+    )
+    os.system("echo $DISPLAY")
     bot = SiteReader()
+
     # ulist = bot.get_url_list()
     # to_save = pd.DataFrame(ulist)
     # to_save.to_csv("current_listings.csv")
-    url_list = pd.read_csv("listings.csv")
+    url_list = pd.read_csv("apt_listings_20201109.csv")
 
     test_url = url_list.iloc[2][1]
     base_url = "https://www.trulia.com"
@@ -270,7 +291,7 @@ if __name__ == "__main__":
 
     # TODO: figure out how to handle housing rentals #1392
 
-    # apts_data = bot.get_all_apartments(base_url, url_list)
-    # print(f"Apartments retrieved: {len(apts_data)}")
-    # to_save = pd.DataFrame(apts_data)
-    # to_save.to_csv("current_apt_data.csv")
+    apts_data = bot.get_all_apartments(base_url, url_list)
+    print(f"Apartments retrieved: {len(apts_data)}")
+    to_save = pd.DataFrame(apts_data)
+    to_save.to_csv("current_apt_data.csv")

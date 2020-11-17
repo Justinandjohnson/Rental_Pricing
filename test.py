@@ -110,69 +110,159 @@ class SiteReader:
         df = self.create_df()
         # print(f"made the dataframe: {df}")
 
-        for floor_plan_table in soup.find_all(
-            "table", {"data-testid": "floor-plan-group"}
-        ):
-            for tr in floor_plan_table.find_all("tr"):
+        # Is this an apartment complex with a table to parse?
+        if soup.find_all("table", {"data-testid": "floor-plan-group"}) != []:
+            for floor_plan_table in soup.find_all(
+                "table", {"data-testid": "floor-plan-group"}
+            ):
+                for tr in floor_plan_table.find_all("tr"):
 
-                unit = tr.find("div", {"color": "highlight"}).text
-                # print(unit)
+                    unit = tr.find("div", {"color": "highlight"}).text
+                    # print(unit)
 
-                sqft = tr.find(
-                    "td",
-                    {
-                        "class": lambda L: L
-                        and L.startswith("FloorPlanTable__FloorPlanFloorSpaceCell")
-                    },
-                ).text
+                    sqft = tr.find(
+                        "td",
+                        {
+                            "class": lambda L: L
+                            and L.startswith("FloorPlanTable__FloorPlanFloorSpaceCell")
+                        },
+                    ).text
 
-                bed = tr.find_all(
-                    "td",
-                    {
-                        "class": lambda L: L
-                        and L.startswith("FloorPlanTable__FloorPlanFeaturesCell")
-                    },
-                )[0].text
+                    bed = tr.find_all(
+                        "td",
+                        {
+                            "class": lambda L: L
+                            and L.startswith("FloorPlanTable__FloorPlanFeaturesCell")
+                        },
+                    )[0].text
 
-                bath = tr.find_all(
-                    "td",
-                    {
-                        "class": lambda L: L
-                        and L.startswith("FloorPlanTable__FloorPlanFeaturesCell")
-                    },
-                )[1].text
+                    bath = tr.find_all(
+                        "td",
+                        {
+                            "class": lambda L: L
+                            and L.startswith("FloorPlanTable__FloorPlanFeaturesCell")
+                        },
+                    )[1].text
 
-                price = tr.find_all(
-                    "td",
-                    {
-                        "class": lambda L: L
-                        and L.startswith("FloorPlanTable__FloorPlanCell"),
-                        "class": lambda L: L
-                        and L.startswith("FloorPlanTable__FloorPlanSMCell"),
-                    },
-                    limit=2,
-                )[1].text
+                    price = tr.find_all(
+                        "td",
+                        {
+                            "class": lambda L: L
+                            and L.startswith("FloorPlanTable__FloorPlanCell"),
+                            "class": lambda L: L
+                            and L.startswith("FloorPlanTable__FloorPlanSMCell"),
+                        },
+                        limit=2,
+                    )[1].text
 
-                name = soup.find(
-                    "span", {"data-testid": "home-details-summary-headline"}
-                ).text
+                    name = soup.find(
+                        "span", {"data-testid": "home-details-summary-headline"}
+                    ).text
 
-                address = soup.find_all(
-                    "span", {"data-testid": "home-details-summary-city-state"}
-                )[0].text
+                    address = soup.find_all(
+                        "span", {"data-testid": "home-details-summary-city-state"}
+                    )[0].text
 
-                city_state_zip = soup.find_all(
-                    "span", {"data-testid": "home-details-summary-city-state"}
-                )[1].text
+                    city_state_zip = soup.find_all(
+                        "span", {"data-testid": "home-details-summary-city-state"}
+                    )[1].text
 
-                city, state, zipcode = city_state_zip.replace(",", "").rsplit(
-                    maxsplit=2
+                    city, state, zipcode = city_state_zip.replace(",", "").rsplit(
+                        maxsplit=2
+                    )
+
+                    description = soup.find(
+                        "div", {"data-testid": "home-description-text-description-text"}
+                    ).text
+
+                    details = [
+                        detail.text
+                        for detail in soup.find_all(
+                            "li",
+                            {
+                                "class": lambda L: L
+                                and L.startswith("FeatureList__FeatureListItem")
+                            },
+                        )
+                    ]
+                    details = " ,".join(details)
+
+                    apartment_url = base_url + current_url
+                    date = str(dt.now().date())
+
+                    df = pd.concat(
+                        [
+                            df,
+                            pd.DataFrame(
+                                [
+                                    {
+                                        "name": name,
+                                        "address": address,
+                                        "unit": unit,
+                                        "sqft": sqft,
+                                        "bed": bed,
+                                        "bath": bath,
+                                        "price": price,
+                                        "city": city,
+                                        "state": state,
+                                        "zipcode": zipcode,
+                                        "description": description,
+                                        "details": details,
+                                        "url": apartment_url,
+                                        "date": date,
+                                    }
+                                ]
+                            ),
+                        ],
+                        ignore_index=True,
+                    )
+            else:  # must be a home condo
+                home_deets = soup.find_all(
+                    "div", {"data-testid": "home-details-summary-container"}
                 )
-
-                description = soup.find(
+                price = (
+                    home_deets[0]
+                    .find_all("div", lambda L: L and L.startswith("Text__TextBase"))[0]
+                    .text
+                )
+                bed = (
+                    home_deets[0]
+                    .find_all(
+                        "div", lambda L: L and L.startswith("MediaBlock__MediaContent")
+                    )[0]
+                    .text
+                )
+                bath = (
+                    home_deets[0]
+                    .find_all(
+                        "div", lambda L: L and L.startswith("MediaBlock__MediaContent")
+                    )[1]
+                    .text
+                )
+                sqft = (
+                    home_deets[0]
+                    .find_all(
+                        "div", lambda L: L and L.startswith("MediaBlock__MediaContent")
+                    )[2]
+                    .text
+                )
+                name = (
+                    home_deets[0]
+                    .find_all("span", {"data-testid": "home-details-summary-headline"})[
+                        0
+                    ]
+                    .text
+                )
+                city_state_zip = (
+                    home_deets[0]
+                    .find_all(
+                        "span", {"data-testid": "home-details-summary-city-state"}
+                    )[0]
+                    .text
+                )
+                description = soup.find_all(
                     "div", {"data-testid": "home-description-text-description-text"}
-                ).text
-
+                )[0].text
                 details = [
                     detail.text
                     for detail in soup.find_all(
@@ -183,11 +273,9 @@ class SiteReader:
                         },
                     )
                 ]
-                details = " ,".join(details)
-
-                apartment_url = base_url + current_url
+                unit = "home"
                 date = str(dt.now().date())
-
+                apartment_url = base_url + current_url
                 df = pd.concat(
                     [
                         df,
@@ -279,19 +367,3 @@ if __name__ == "__main__":
     )
     os.system("echo $DISPLAY")
     bot = SiteReader()
-
-    # ulist = bot.get_url_list()
-    # to_save = pd.DataFrame(ulist)
-    # to_save.to_csv("current_listings.csv")
-    url_list = pd.read_csv("apt_listings_20201109.csv")
-
-    test_url = url_list.iloc[2][1]
-    base_url = "https://www.trulia.com"
-    page_url = "/for_rent/Austin,TX/"
-
-    # TODO: figure out how to handle housing rentals #1392
-
-    apts_data = bot.get_all_apartments(base_url, url_list)
-    print(f"Apartments retrieved: {len(apts_data)}")
-    to_save = pd.DataFrame(apts_data)
-    to_save.to_csv("current_apt_data.csv")

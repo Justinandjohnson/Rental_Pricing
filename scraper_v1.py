@@ -14,10 +14,12 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 
 # to install ChromeDriverManager() on first use
-# chrome_options = Options()
-# chrome_options.add_argument("--no-sandbox")
-# chrome_options.addArguments("--no-sandbox");
-# chrome_options.add_arguments("--disable-dev-shm-usage")
+chrome_options = Options()
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--window-size=400,300")
+chrome_options.add_argument("--remote-debugging-port=9222")
+chrome_options.add_argument("--disable-dev-shm-usage")
 # webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
 # webdriver.Chrome(ChromeDriverManager().install())
 
@@ -35,7 +37,7 @@ class SiteReader:
         # Comment out when developing / debugging
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--window-size=800,600")
+        chrome_options.add_argument("--window-size=400,300")
         chrome_options.add_argument("--remote-debugging-port=9222")
         print(f"Chrome headless is set to: {chrome_options.headless}")
         # self.driver = webdriver.Chrome(options=chrome_options)
@@ -292,6 +294,8 @@ if __name__ == "__main__":
         ["Minneapolis", "MN"],
         ["Orlando", "FL"],
         ["San_Francisco", "CA"],
+        ["Austin", "TX"],
+        ["Ann_Arbor", "MI"],
     ]
 
     for i, city_state in enumerate(tqdm(cities, unit="city"), start=1):
@@ -299,13 +303,11 @@ if __name__ == "__main__":
         city, state = city_state
 
         city_url = f"/for_rent/{city},{state}/"
-        residence_urls = f"DATA/urls/apt_page_listings_{city}_{state]}_{today}.csv"
-        unit_info = (
-            f"DATA/scrape_files/apt_unit_listings_{city}_{state}_{today}.csv"
-        )
+        residence_urls = f"DATA/urls/apt_page_listings_{city}_{state}_{today}.csv"
+        unit_info = f"DATA/scrape_files/apt_unit_listings_{city}_{state}_{today}.csv"
 
-        # Generate list of URLs to walk through, skip if saved list is recent 
-        for i in range(7): 
+        # Generate list of URLs to walk through, skip if saved list is recent
+        for i in range(7):
             if os.path.isfile(
                 f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
             ):
@@ -313,7 +315,7 @@ if __name__ == "__main__":
                     f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
                 )
                 break  # only breaks one-level out of for-loop
-            elif i < 7:
+            elif i < 6:
                 continue
             else:
                 print("No recent file found, generating new list")
@@ -324,8 +326,9 @@ if __name__ == "__main__":
 
         # Find all the units available for a listing
         if os.path.isfile(unit_info):
-            pass
+            print("units file found")
         else:
+            print("units file not found")
             apts_data = bot.get_all_apartments(base_url, url_list, city, state)
             to_save = pd.DataFrame(apts_data)
             to_save.to_csv(unit_info)

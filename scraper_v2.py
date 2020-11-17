@@ -113,7 +113,7 @@ class SiteReader:
         # print(f"made the dataframe: {df}")
 
         # Is this an apartment complex with a table to parse?
-        if soup.find_all("table", {"data-testid": "floor-plan-group"}) != []:
+        if soup.find_all("table", {"data-testid": "floor-plan-group"}) != None:
             for floor_plan_table in soup.find_all(
                 "table", {"data-testid": "floor-plan-group"}
             ):
@@ -366,51 +366,10 @@ class SiteReader:
         return df
 
 
-def main(i, city_state):
+def main():
     """ MAIN """
     bot = SiteReader()
     base_url = "https://www.trulia.com"
-    today = int(dt.today().strftime("%Y%m%d"))
-    city, state = city_state
-
-    city_url = f"/for_rent/{city},{state}/"
-    residence_urls = f"DATA/urls/apt_page_listings_{city}_{state}_{today}.csv"
-    unit_info = f"DATA/scrape_files/apt_unit_listings_{city}_{state}_{today}.csv"
-
-    # Generate list of URLs to walk through, skip if saved list is recent
-    for i in range(7):
-        if os.path.isfile(
-            f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
-        ):
-            url_list = pd.read_csv(
-                f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
-            )
-            break  # only breaks one-level out of for-loop
-        elif i < 6:
-            continue
-        else:
-            print("No recent file found, generating new list")
-            ulist = bot.get_url_list(base_url, city_url)
-            to_save = pd.DataFrame(ulist)
-            to_save.to_csv(residence_urls)
-            url_list = pd.read_csv(residence_urls)
-
-    # Find all the units available for a listing
-    if os.path.isfile(unit_info):
-        print("units file found")
-    else:
-        print("units file not found")
-        apts_data = bot.get_all_apartments(base_url, url_list, city, state)
-        to_save = pd.DataFrame(apts_data)
-        to_save.to_csv(unit_info)
-
-
-if __name__ == "__main__":
-    print(f"Starting...")
-    os.system(
-        "export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0"
-    )
-    os.system("echo $DISPLAY")
 
     cities = [
         ["Chicago", "IL"],
@@ -427,6 +386,50 @@ if __name__ == "__main__":
         ["Ann_Arbor", "MI"],
     ]
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for i, city_state in enumerate(tqdm(cities, unit="city"), start=1):
-            executor.map(main, [i, city_state])
+    # Generate list of URLs to walk through, skip if saved list is recent
+    for i, city_state in enumerate(tqdm(cities, unit="city"), start=1):
+        today = int(dt.today().strftime("%Y%m%d"))
+        city, state = city_state
+
+        city_url = f"/for_rent/{city},{state}/"
+        residence_urls = f"DATA/urls/apt_page_listings_{city}_{state}_{today}.csv"
+        unit_info = f"DATA/scrape_files/apt_unit_listings_{city}_{state}_{today}.csv"
+
+        for i in range(7):
+            if os.path.isfile(
+                f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
+            ):
+                url_list = pd.read_csv(
+                    f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
+                )
+                break  # only breaks one-level out of for-loop
+            elif i < 6:
+                continue
+            else:
+                print("No recent file found, generating new list")
+                ulist = bot.get_url_list(base_url, city_url)
+                to_save = pd.DataFrame(ulist)
+                to_save.to_csv(residence_urls)
+                url_list = pd.read_csv(residence_urls)
+
+        # Find all the units available for a listing
+        if os.path.isfile(unit_info):
+            print("units file found")
+        else:
+            print("units file not found")
+            apts_data = bot.get_all_apartments(base_url, url_list, city, state)
+            to_save = pd.DataFrame(apts_data)
+            to_save.to_csv(unit_info)
+
+
+if __name__ == "__main__":
+    print(f"Starting...")
+    os.system(
+        "export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0"
+    )
+    os.system("echo $DISPLAY")
+
+    main()
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     for i, city_state in enumerate(tqdm(cities, unit="city"), start=1):
+    #         executor.map(main, [i, city_state])

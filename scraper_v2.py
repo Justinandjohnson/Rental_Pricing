@@ -218,7 +218,8 @@ class SiteReader:
                         ],
                         ignore_index=True,
                     )
-            else:  # must be a home condo
+        else:  # a home, condo, etc... not an apt complex
+            try:
                 home_deets = soup.find_all(
                     "div", {"data-testid": "home-details-summary-container"}
                 )
@@ -314,6 +315,8 @@ class SiteReader:
                     ],
                     ignore_index=True,
                 )
+            except Exception as e:
+                pass
         return df
 
     def get_all_apartments(self, base_url, url_list, city, state):
@@ -433,3 +436,6 @@ if __name__ == "__main__":
     # with concurrent.futures.ThreadPoolExecutor() as executor:
     #     for i, city_state in enumerate(tqdm(cities, unit="city"), start=1):
     #         executor.map(main, [i, city_state])
+
+    # https://testdriven.io/blog/building-a-concurrent-web-scraper-with-python-and-selenium/
+    #

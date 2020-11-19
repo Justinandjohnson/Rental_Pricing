@@ -438,4 +438,4 @@ if __name__ == "__main__":
     #         executor.map(main, [i, city_state])
 
     # https://testdriven.io/blog/building-a-concurrent-web-scraper-with-python-and-selenium/
-    #
+    # https://medium.com/@pyzzled/running-headless-chrome-with-selenium-in-python-3f42d1f5ff1d

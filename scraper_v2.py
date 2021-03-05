@@ -12,6 +12,8 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 
+
+#### Buggy - some troubleshoting things (TODO) ###
 # to install ChromeDriverManager() on first use
 chrome_options = Options()
 chrome_options.add_argument("--no-sandbox")
@@ -375,8 +377,8 @@ def main():
     base_url = "https://www.trulia.com"
 
     cities = [
-        ["Chicago", "IL"],
-        ["Saint_Louis", "MO"],
+        # ["Chicago", "IL"],
+        # ["Saint_Louis", "MO"],
         ["New_York", "NY"],
         ["Las_Vegas", "NV"],
         ["Dallas", "TX"],
@@ -385,8 +387,8 @@ def main():
         ["Minneapolis", "MN"],
         ["Orlando", "FL"],
         ["San_Francisco", "CA"],
-        ["Austin", "TX"],
-        ["Ann_Arbor", "MI"],
+        # ["Austin", "TX"],
+        # ["Ann_Arbor", "MI"],
     ]
 
     # Generate list of URLs to walk through, skip if saved list is recent

@@ -5,52 +5,43 @@ from datetime import datetime as dt
 
 pd.options.display.float_format = "{:.0f}".format
 
-# scraping
-from bs4 import BeautifulSoup
-import re
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.options import Options
-
-
-#### Buggy - some troubleshoting things (TODO) ###
-# to install ChromeDriverManager() on first use
-chrome_options = Options()
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--window-size=400,300")
-chrome_options.add_argument("--remote-debugging-port=9222")
-chrome_options.add_argument("--disable-dev-shm-usage")
-# webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
-# webdriver.Chrome(ChromeDriverManager().install())
-
-
 import time
 import requests
 from tqdm import tqdm
 import os
+import re
 
+# scraping 'STUFF'
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+
+chrome_options = Options()
+### Use Headless ###
+# chrome_options.add_argument("--no-sandbox")
+# chrome_options.add_argument("--headless")
+print(f"Chrome headless is set to: {chrome_options.headless}")
+### don't load images ###
+# prefs = {"profile.managed_default_content_settings.images": 2}
+# chrome_options.add_experimental_option("prefs", prefs)
+print(f"Chrome will download images is set to: {chrome_options.arguments}")
+
+
+
+# chrome_options = webdriver.ChromeOptions()
+
+# driver = webdriver.Chrome(chrome_options=chrome_options)
+
+### attempting to scrape multiple cities at once - currently doesn't work (TODO) ###
 import concurrent.futures
 
 
 class SiteReader:
     def __init__(self):
         """ Headless options for script """
-        chrome_options = Options()
-        # Comment out when developing / debugging
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--window-size=400,300")
-        chrome_options.add_argument("--remote-debugging-port=9222")
-        print(f"Chrome headless is set to: {chrome_options.headless}")
-        # self.driver = webdriver.Chrome(options=chrome_options)
-
-        # Prototyping
-        self.driver = webdriver.Chrome()
-
-        # if webdriver gets stuck in headless mode, webdriver.ChromeOptions.set_headless=False
-        base_url = "https://www.trulia.com"
-        city_url = "/for_rent/Austin,TX/"
+        self.driver = webdriver.Chrome(options=chrome_options)
+        print("Stating Chrome...")
 
     def get_url_list(self, base_url, city_url):
         """Gets a list of urls from main page to scrape."""
@@ -61,13 +52,20 @@ class SiteReader:
         url_list = []
         last_page = False
         i = 1
+        print (base_url, city_url)
 
         # while last_page == False and i < 100:  # 100 picked because 92 pages for austin
         while last_page == False:
-            time.sleep(3)
+            time.sleep(.1)
+            print(base_url + city_url)
             self.driver.get(base_url + city_url)  # city + page of site
             html = self.driver.execute_script("return document.body.innerHTML;")
             soup = BeautifulSoup(html, features="lxml")
+
+            # Test for reCaptcha
+            if soup.find('h1').text == 'Please verify you are a human':
+                print("URL INFO - RECAPTCHA!!!!")
+                time.sleep(300)
 
             for div in soup.find_all(
                 "div",
@@ -85,7 +83,7 @@ class SiteReader:
                 last_page = False
                 city_url = soup.find("a", {"aria-label": "Next Page"})["href"]
                 # print(city_url)
-                time.sleep(10)
+                time.sleep(.1)
             else:
                 last_page = True
             # print(url_list)
@@ -99,7 +97,6 @@ class SiteReader:
     def get_apartment_data(self, base_url, current_url):
         """Gets apartment data for the url specified"""
         try:
-
             time.sleep(0.1)
             # print(base_url + current_url)
             response = self.driver.get(base_url + current_url)
@@ -109,6 +106,11 @@ class SiteReader:
 
         except (ConnectionError, ConnectionResetError):
             pass
+
+        # Test for reCaptcha
+        if soup.find('h1').text == 'Please verify you are a human':
+            print("APT INFO - RECAPTCHA!!!!")
+            time.sleep(300)
 
         apartment_list = []
         df = self.create_df()
@@ -333,7 +335,7 @@ class SiteReader:
             if i % 10 == 0:
                 apts_data.to_csv(f"DATA/scrape_files/partial_{city}_{state}.csv")
             # print(current_url)
-            time.sleep(3)
+            time.sleep(.3)
             apts_data = pd.concat(
                 [apts_data, self.get_apartment_data(base_url, current_url)],
                 ignore_index=True,
@@ -379,12 +381,12 @@ def main():
     cities = [
         # ["Chicago", "IL"],
         # ["Saint_Louis", "MO"],
-        ["New_York", "NY"],
-        ["Las_Vegas", "NV"],
-        ["Dallas", "TX"],
-        ["Portland", "OR"],
-        ["Seattle", "WA"],
-        ["Minneapolis", "MN"],
+        # ["New_York", "NY"],
+        # ["Las_Vegas", "NV"],
+        # ["Dallas", "TX"],
+        # ["Portland", "OR"],
+        # ["Seattle", "WA"],
+        # ["Minneapolis", "MN"],
         ["Orlando", "FL"],
         ["San_Francisco", "CA"],
         # ["Austin", "TX"],
@@ -429,9 +431,6 @@ def main():
 
 if __name__ == "__main__":
     print(f"Starting...")
-    os.system(
-        "export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0"
-    )
     os.system("echo $DISPLAY")
 
     main()

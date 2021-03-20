@@ -28,7 +28,6 @@ print(f"Chrome headless is set to: {chrome_options.headless}")
 print(f"Chrome will download images is set to: {chrome_options.arguments}")
 
 
-
 # chrome_options = webdriver.ChromeOptions()
 
 # driver = webdriver.Chrome(chrome_options=chrome_options)
@@ -52,18 +51,18 @@ class SiteReader:
         url_list = []
         last_page = False
         i = 1
-        print (base_url, city_url)
+        print(base_url, city_url)
 
         # while last_page == False and i < 100:  # 100 picked because 92 pages for austin
         while last_page == False:
-            time.sleep(.1)
+            time.sleep(0.1)
             print(base_url + city_url)
             self.driver.get(base_url + city_url)  # city + page of site
             html = self.driver.execute_script("return document.body.innerHTML;")
             soup = BeautifulSoup(html, features="lxml")
 
             # Test for reCaptcha
-            if soup.find('h1').text == 'Please verify you are a human':
+            if soup.find("h1").text == "Please verify you are a human":
                 print("URL INFO - RECAPTCHA!!!!")
                 time.sleep(300)
 
@@ -83,7 +82,7 @@ class SiteReader:
                 last_page = False
                 city_url = soup.find("a", {"aria-label": "Next Page"})["href"]
                 # print(city_url)
-                time.sleep(.1)
+                time.sleep(0.1)
             else:
                 last_page = True
             # print(url_list)
@@ -108,7 +107,7 @@ class SiteReader:
             pass
 
         # Test for reCaptcha
-        if soup.find('h1').text == 'Please verify you are a human':
+        if soup.find("h1").text == "Please verify you are a human":
             print("APT INFO - RECAPTCHA!!!!")
             time.sleep(300)
 
@@ -335,7 +334,7 @@ class SiteReader:
             if i % 10 == 0:
                 apts_data.to_csv(f"DATA/scrape_files/partial_{city}_{state}.csv")
             # print(current_url)
-            time.sleep(.3)
+            time.sleep(0.3)
             apts_data = pd.concat(
                 [apts_data, self.get_apartment_data(base_url, current_url)],
                 ignore_index=True,
@@ -375,7 +374,7 @@ class SiteReader:
 
 def main():
     """ MAIN """
-    bot = SiteReader()
+    # bot = SiteReader()
     base_url = "https://www.trulia.com"
 
     cities = [
@@ -389,13 +388,27 @@ def main():
         # ["Minneapolis", "MN"],
         # ["Orlando", "FL"],
         # ["San_Francisco", "CA"],
-        ["Austin", "TX"],
+        # ["Austin", "TX"],
         # ["Ann_Arbor", "MI"],
     ]
 
+    ### will attempt multi-site reading from here ###
+    today = int(dt.today().strftime("%Y%m%d"))
+
+    austin = SiteReader()
+    austin_url = f"/for_rent/Austin,TX/"
+    austin_residence_urls = f"DATA/urls/apt_page_listings_Austin_TX_{today}.csv"
+    austin_unit_info = f"DATA/scrape_files/apt_unit_listings_Austin_TX_{today}.csv"
+
+    # would expect it hang here...
+    austin_list = bot.get_url_list(base_url, austin_url)
+    to_save = pd.DataFrame(ulist)
+    to_save.to_csv(residence_urls)
+    url_list = pd.read_csv(residence_urls)
+
     # Generate list of URLs to walk through, skip if saved list is recent
     for i, city_state in enumerate(tqdm(cities, unit="city"), start=1):
-        days_back = 15
+        days_back = 10
         today = int(dt.today().strftime("%Y%m%d"))
         city, state = city_state
 
@@ -403,7 +416,7 @@ def main():
         residence_urls = f"DATA/urls/apt_page_listings_{city}_{state}_{today}.csv"
         unit_info = f"DATA/scrape_files/apt_unit_listings_{city}_{state}_{today}.csv"
 
-        for i in range(days_back):
+        for i in range(7):
             if os.path.isfile(
                 f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
             ):
@@ -411,7 +424,7 @@ def main():
                     f"DATA/urls/apt_page_listings_{city}_{state}_{today - i}.csv"
                 )
                 break  # only breaks one-level out of for-loop
-            elif i < (days_back -1):
+            elif i < (days_back - 1):
                 continue
             else:
                 print("No recent file found, generating new list")

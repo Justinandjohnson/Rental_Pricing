@@ -88,6 +88,7 @@ class Trulia:
 
         # This kicks off the scraper
         self.are_apts_current()
+        self.driver.close()
 
     def get_url_list(self):
         """Gets a list of URLs for each appartment in the city of interest.
@@ -475,8 +476,7 @@ class Trulia:
             pass
         return df
     
-    @staticmethod
-    def toggle_vpn():
+    def toggle_vpn(self):
         os.system("windscribe disconnect")
         time.sleep(10)
         os.system("windscribe connect best")

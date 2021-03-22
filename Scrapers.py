@@ -83,6 +83,8 @@ class Trulia:
         )
         self.page = 1
         self.url_list = []
+        self.recaptcha_url_counter = 0
+        self.recaptcha_apt_counter = 0
 
         # This kicks off the scraper
         self.are_apts_current()
@@ -119,7 +121,10 @@ class Trulia:
             # Test for reCaptcha
             elif soup.find("h1").text == "Please verify you are a human":
                 logging.warning("URL INFO - RECAPTCHA!!!!")
-                # TODO, do something with reCAPTCHA
+                # do something with reCAPTCHA
+                self.recaptcha_url_counter += 1
+                if self.recaptcha_url_counter > 10:
+                    self.toggle_vpn()
                 time.sleep(self.reCaptcha_delay)
                 pass
             else:
@@ -144,8 +149,8 @@ class Trulia:
             tqdm(self.url_list.iloc[:, 1].to_list(), unit="site", desc=self.city),
             start=1,
         ):
-            # Save partial data every 10 pages
-            if self.page % 10 == 0:
+            # Save partial data every 10 sites
+            if i % 10 == 0:
                 apts_data.to_csv(self.partial)
             logging.debug(f"The Current URL is: {current_url}")
             time.sleep(self.delay)
@@ -154,7 +159,7 @@ class Trulia:
                 ignore_index=True,
             )
             logging.debug(apts_data.tail(1))
-        return apts_data
+        apts_data.to_csv(self.unit_info)
 
     def get_apartment_data(self, current_url):
         """Gets apartment data for the url specified"""
@@ -175,6 +180,9 @@ class Trulia:
         if soup.find("h1").text == "Please verify you are a human":
             logging.warning("APT INFO - RECAPTCHA!!!!")
             # deal with recaptcha
+            self.recaptcha_apt_counter += 1
+            if self.recaptcha_apt_counter > 10:
+                self.toggle_vpn()
             time.sleep(self.reCaptcha_delay)
 
         # Is this an apartment complex with a table to parse?
@@ -466,3 +474,11 @@ class Trulia:
         except Exception as e:
             pass
         return df
+    
+    @staticmethod
+    def toggle_vpn():
+        os.system("windscribe disconnect")
+        time.sleep(10)
+        os.system("windscribe connect best")
+        self.recaptcha_url_counter = 0
+        self.recaptcha_apt_counter = 0

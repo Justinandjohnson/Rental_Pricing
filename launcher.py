@@ -5,23 +5,8 @@ import concurrent.futures
 from Scrapers import Trulia
 
 ### Run Singular Test ###
-# bot = Trulia(["Saint_Louis", "MO"])
+# bot = Trulia(["Ann_Arbor", "MI"])
 
-
-# cities = [
-#     ("Chicago", "IL"),
-#     ("Saint_Louis", "MO"),
-#     ("New_York", "NY"),
-#     ("Las_Vegas", "NV"),
-#     ("Dallas", "TX"),
-#     ("Portland", "OR"),
-#     ("Seattle", "WA"),
-#     ("Minneapolis", "MN"),
-#     ("Orlando", "FL"),
-#     ("San_Francisco", "CA"),
-#     ("Austin", "TX"),
-#     ("Ann_Arbor", "MI"),
-# ]
 
 cities = [
     ["Chicago", "IL"],
@@ -58,9 +43,3 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 #     bot12 = executor.submit(Trulia, "Ann_Arbor", "MI")
 
 
-def p(city):
-    print(f"found {city[0]} and {city[1]}")
-
-
-# print([(cs[0], cs[1]) for cs in cities])
-list(map(p, cities))

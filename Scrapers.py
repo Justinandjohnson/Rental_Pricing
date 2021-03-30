@@ -477,14 +477,22 @@ class Trulia:
         except Exception as e:
             pass
         return df
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> b6b0d03813f49e54e9bd64effd84c75a38d80f80
     def toggle_vpn(self):
         os.system("windscribe disconnect")
         time.sleep(10)
         os.system("windscribe connect best")
         self.recaptcha_url_counter = 0
+<<<<<<< HEAD
         self.recaptcha_apt_counter = 0
 
     def __del__(self):
         self.driver.close()
         print(f"Destructor called, webpage deleted after {self.city}, {self.state}")
+=======
+        self.recaptcha_apt_counter = 0
+>>>>>>> b6b0d03813f49e54e9bd64effd84c75a38d80f80

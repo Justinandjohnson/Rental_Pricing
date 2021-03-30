@@ -456,6 +456,7 @@ class Trulia:
         return df
 
     def toggle_vpn(self):
+        """ Toggle VPN, in my case I use Windscribe """
         os.system("windscribe disconnect")
         time.sleep(10)
         os.system("windscribe connect best")

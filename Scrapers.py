@@ -419,10 +419,7 @@ class Trulia:
                 detail.text
                 for detail in soup.find_all(
                     "li",
-                    {
-                        "class": lambda L: L
-                        and L.startswith("FeatureList__FeatureListItem")
-                    },
+                    {"class": lambda L: L and L.startswith("Feature__FeatureListItem")},
                 )
             ]
             unit = "home"

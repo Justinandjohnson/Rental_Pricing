@@ -4,11 +4,10 @@ from selenium.webdriver.chrome.options import Options
 import time
 import numpy as np
 
-
 # Python program to illustrate destructor
 class Trulia:
     # Initializing
-    def __init__(self, city_state, auto_start=True):
+    def __init__(self, city_state):
         self.driver = webdriver.Chrome()
 
         self.delay = int(np.random.rand() * 10)

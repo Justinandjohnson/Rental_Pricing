@@ -1,9 +1,6 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime as dt
-
-pd.options.display.float_format = "{:.0f}".format
-
 import time, requests, os, re
 from tqdm import tqdm
 
@@ -12,23 +9,8 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
-from fake_useragent import UserAgent
 
-# Chrome WebDriver stuff
 chrome_options = Options()
-### Use Headless ###
-# chrome_options.add_argument("--no-sandbox")
-# chrome_options.add_argument("--headless")
-# print(f"Chrome headless is set to: {chrome_options.headless}")
-
-# ua = UserAgent()
-# userAgent = ua.random
-# chrome_options.add_argument(f"user-agent={userAgent}")
-
-### don't load images ###
-prefs = {"profile.managed_default_content_settings.images": 2}
-chrome_options.add_experimental_option("prefs", prefs)
-print(f"Chrome Options are set to: {chrome_options.arguments}")
 
 # Easy way to launch Xvfb display in Python
 from pyvirtualdisplay import Display
@@ -47,16 +29,18 @@ logging.basicConfig(
 # pass city, state - DONE
 # @staticmethod cleanup - DONE
 # Tweak URL scraping to include last page - DONE
+# FIX details section of output :'(
 # add house rentals and other offerings
 # add Zillow
 
 
 class Trulia:
     def __init__(self, city_state):
-        """ Headless options for script """
-        # Start a bowser
+        """ Construct the object and launch a browser window """
+        # Set options for chrome
         prefs = {"profile.managed_default_content_settings.images": 2}
         chrome_options.add_experimental_option("prefs", prefs)
+        # Start a bowser
         self.driver = webdriver.Chrome(options=chrome_options)
 
         # randomly delay start, for multiprocessing
@@ -74,7 +58,7 @@ class Trulia:
         self.today = int(dt.today().strftime("%Y%m%d"))
         self.url_expiration = 20  # set random days a url file is valid b/w 5-20
 
-        # Data Save Locations:
+        # Set Data Save Locations:
         self.residence_urls = (
             f"DATA/urls/apt_page_listings_{self.city}_{self.state}_{self.today}.csv"
         )
@@ -87,10 +71,6 @@ class Trulia:
         self.url_list = []
         self.recaptcha_url_counter = 0
         self.recaptcha_apt_counter = 0
-
-        # This kicks off the scraper
-        self.are_apts_current()
-        self.driver.close()
 
     def get_url_list(self):
         """Gets a list of URLs for each appartment in the city of interest.
@@ -477,22 +457,16 @@ class Trulia:
         except Exception as e:
             pass
         return df
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> b6b0d03813f49e54e9bd64effd84c75a38d80f80
     def toggle_vpn(self):
         os.system("windscribe disconnect")
         time.sleep(10)
         os.system("windscribe connect best")
         self.recaptcha_url_counter = 0
-<<<<<<< HEAD
         self.recaptcha_apt_counter = 0
 
     def __del__(self):
         self.driver.close()
-        print(f"Destructor called, webpage deleted after {self.city}, {self.state}")
-=======
-        self.recaptcha_apt_counter = 0
->>>>>>> b6b0d03813f49e54e9bd64effd84c75a38d80f80
+        logging.warning(
+            f"Destructor called, webpage deleted after {self.city}, {self.state}"
+        )

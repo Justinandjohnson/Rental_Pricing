@@ -465,6 +465,7 @@ class Trulia:
 
     def __del__(self):
         self.driver.close()
+        os.system(f"rm {self.partial}")
         logging.warning(
-            f"Destructor called, webpage deleted after {self.city}, {self.state}"
+            f"Destructor called, webpage and partial file deleted after {self.city}, {self.state}"
         )

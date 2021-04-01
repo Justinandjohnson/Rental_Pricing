@@ -326,7 +326,7 @@ class Trulia:
                         "li",
                         {
                             "class": lambda L: L
-                            and L.startswith("FeatureList__FeatureListItem")
+                            and L.startswith("Feature__FeatureListItem")
                         },
                     )
                 ]
@@ -422,6 +422,7 @@ class Trulia:
                     {"class": lambda L: L and L.startswith("Feature__FeatureListItem")},
                 )
             ]
+            details = " ,".join(details)
             unit = "home"
             date = str(dt.now().date())
             apartment_url = base_url + current_url

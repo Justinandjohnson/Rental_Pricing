@@ -34,7 +34,7 @@ chrome_options.add_argument("--window-size=800,800")
 
 
 if __name__ == "__main__":
-    url = "https://www.trulia.com/c/tx/austin/regency-601-w-11th-st-austin-tx-78701--2110329431"
+    url = "https://www.trulia.com/c/fl/miami/gardens-of-pinecrest-8800-sw-68th-ct-miami-fl-33156--2093907088"
     bot = webdriver.Chrome(options=chrome_options)
     response = bot.get(url)
     html = bot.execute_script("return document.body.innerHTML;")
